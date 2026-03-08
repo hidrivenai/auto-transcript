@@ -33,8 +33,9 @@ def test_config_loads_required_vars():
 def test_config_raises_on_missing_key():
     with patch.dict(os.environ, {}, clear=True):
         config = _reload_config()
-        with pytest.raises(ValueError, match='ELEVENLABS_API_KEY'):
-            config.load_config()
+        with patch.object(config, 'load_dotenv'):
+            with pytest.raises(ValueError, match='ELEVENLABS_API_KEY'):
+                config.load_config()
 
 
 def test_config_default_poll_interval():

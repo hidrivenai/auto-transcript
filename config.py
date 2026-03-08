@@ -4,14 +4,23 @@ from dotenv import load_dotenv
 
 REQUIRED = ['ELEVENLABS_API_KEY', 'ONEDRIVE_REMOTE', 'GDRIVE_REMOTE']
 
+
+def _env(key: str, default: str | None = None) -> str | None:
+    """Get env var, stripping surrounding quotes if present."""
+    val = os.environ.get(key, default)
+    if val and len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
+        val = val[1:-1]
+    return val
+
+
 def load_config() -> dict:
     load_dotenv()
     for key in REQUIRED:
-        if not os.environ.get(key):
+        if not _env(key):
             raise ValueError(f"Missing required environment variable: {key}")
     return {
-        'elevenlabs_api_key': os.environ['ELEVENLABS_API_KEY'],
-        'onedrive_remote': os.environ['ONEDRIVE_REMOTE'],
-        'gdrive_remote': os.environ['GDRIVE_REMOTE'],
-        'poll_interval': int(os.environ.get('POLL_INTERVAL_SECONDS', '300')),
+        'elevenlabs_api_key': _env('ELEVENLABS_API_KEY'),
+        'onedrive_remote': _env('ONEDRIVE_REMOTE'),
+        'gdrive_remote': _env('GDRIVE_REMOTE'),
+        'poll_interval': int(_env('POLL_INTERVAL_SECONDS', '300')),
     }

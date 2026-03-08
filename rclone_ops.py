@@ -1,13 +1,23 @@
 # rclone_ops.py
 import json
+import os
 import subprocess
+
+
+def _clean_rclone_env() -> dict:
+    """Build env dict with RCLONE_CONFIG_* values stripped of surrounding quotes."""
+    env = os.environ.copy()
+    for key, val in env.items():
+        if key.startswith('RCLONE_CONFIG_') and len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
+            env[key] = val[1:-1]
+    return env
 
 
 def list_files(remote: str) -> list[dict]:
     """List files in remote, return list of {name, mod_time} dicts."""
     result = subprocess.run(
         ['rclone', 'lsjson', remote],
-        capture_output=True, text=True
+        capture_output=True, text=True, env=_clean_rclone_env()
     )
     if result.returncode != 0:
         raise RuntimeError(f"rclone lsjson failed: {result.stderr}")
@@ -23,7 +33,7 @@ def download_file(remote: str, filename: str, local_path: str) -> None:
     """Download a single file from remote to local_path."""
     result = subprocess.run(
         ['rclone', 'copyto', f'{remote}/{filename}', local_path],
-        capture_output=True, text=True
+        capture_output=True, text=True, env=_clean_rclone_env()
     )
     if result.returncode != 0:
         raise RuntimeError(f"rclone download failed for '{filename}': {result.stderr}")
@@ -33,7 +43,7 @@ def upload_file(local_path: str, remote: str, remote_filename: str) -> None:
     """Upload local_path to remote/remote_filename."""
     result = subprocess.run(
         ['rclone', 'copyto', local_path, f'{remote}/{remote_filename}'],
-        capture_output=True, text=True
+        capture_output=True, text=True, env=_clean_rclone_env()
     )
     if result.returncode != 0:
         raise RuntimeError(f"rclone upload failed for '{remote_filename}': {result.stderr}")
