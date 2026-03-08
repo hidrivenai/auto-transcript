@@ -147,10 +147,8 @@ def main():
         'RCLONE_CONFIG_ONEDRIVE_TYPE':  'onedrive',
         'RCLONE_CONFIG_ONEDRIVE_TOKEN': od_cfg['token'],
     }
-    if od_cfg.get('drive_id'):
-        env['RCLONE_CONFIG_ONEDRIVE_DRIVE_ID'] = od_cfg['drive_id']
-    if od_cfg.get('drive_type'):
-        env['RCLONE_CONFIG_ONEDRIVE_DRIVE_TYPE'] = od_cfg['drive_type']
+    # drive_id is intentionally omitted — it can point to an invalid SharePoint
+    # handle for personal accounts. rclone works fine without it.
 
     # Google Drive rclone config
     env['RCLONE_CONFIG_GDRIVE_TYPE']  = 'drive'
