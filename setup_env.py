@@ -74,17 +74,15 @@ def authorize_and_get_token(rclone_type):
     return None
 
 
-def create_remote_with_token(name, rclone_type, token, extra_config=None):
-    """Create rclone remote directly with a pre-obtained token (no interactive prompts)."""
-    subprocess.run(['rclone', 'config', 'delete', name], capture_output=True)
-    cmd = ['rclone', 'config', 'create', name, rclone_type, 'token', token]
-    if extra_config:
-        for k, v in extra_config.items():
-            cmd.extend([k, v])
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"ERROR: Failed to create '{name}' remote: {result.stderr}")
-        sys.exit(1)
+def verify_remote(remote, env_vars):
+    """Check rclone can list the remote using env-var-based config."""
+    import os
+    merged = {**os.environ, **env_vars}
+    result = subprocess.run(
+        ['rclone', 'lsjson', remote, '--max-depth', '0'],
+        capture_output=True, text=True, env=merged,
+    )
+    return result.returncode == 0
 
 
 def write_env(values: dict, path: str = '.env'):
@@ -142,10 +140,6 @@ def main():
         sys.exit(1)
     print("✓ OneDrive token captured")
 
-    # Create the remote with just the token — no drive_id, no drive selection
-    create_remote_with_token('onedrive', 'onedrive', od_token)
-    print("✓ OneDrive remote configured")
-
     # ── Google Drive ──────────────────────────────────────────
     banner("Step 2 of 2 — Google Drive authentication")
     print("Your browser will open to authenticate with Google.")
@@ -158,9 +152,6 @@ def main():
         print("Try running 'rclone authorize drive' manually and copy the token.")
         sys.exit(1)
     print("✓ Google Drive token captured")
-
-    create_remote_with_token('gdrive', 'drive', gd_token, extra_config={'scope': 'drive'})
-    print("✓ Google Drive remote configured")
 
     # ── Build .env ────────────────────────────────────────────
     banner("Writing .env")
@@ -183,17 +174,20 @@ def main():
     write_env(env)
     print("✓ .env written")
 
-    # ── Verify ────────────────────────────────────────────────
+    # ── Verify (using env vars, no local rclone config needed) ──
     banner("Verifying connections")
-    for name, remote in [('OneDrive', f'onedrive:{onedrive_folder}'), ('Google Drive', f'gdrive:{gdrive_folder}')]:
-        result = subprocess.run(
-            ['rclone', 'lsjson', remote, '--max-depth', '0'],
-            capture_output=True, text=True,
-        )
-        if result.returncode == 0:
-            print(f"✓ {name} — connected to {remote}")
+    rclone_env = {
+        'RCLONE_CONFIG_ONEDRIVE_TYPE': 'onedrive',
+        'RCLONE_CONFIG_ONEDRIVE_TOKEN': od_token,
+        'RCLONE_CONFIG_GDRIVE_TYPE': 'drive',
+        'RCLONE_CONFIG_GDRIVE_SCOPE': 'drive',
+        'RCLONE_CONFIG_GDRIVE_TOKEN': gd_token,
+    }
+    for label, remote in [('OneDrive', f'onedrive:{onedrive_folder}'), ('Google Drive', f'gdrive:{gdrive_folder}')]:
+        if verify_remote(remote, rclone_env):
+            print(f"✓ {label} — connected to {remote}")
         else:
-            print(f"⚠ {name} — could not list {remote} (folder may not exist yet)")
+            print(f"⚠ {label} — could not list {remote} (folder may not exist yet)")
 
     # ── Next steps ────────────────────────────────────────────
     print()
