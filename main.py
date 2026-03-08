@@ -6,7 +6,7 @@ import time
 
 from audio import get_duration_seconds, format_duration
 from config import load_config
-from format_note import build_note, parse_place_from_stem
+from format_note import build_note, format_diarized_transcript, parse_place_from_stem
 from rclone_ops import list_files, download_file, upload_file
 from stems import find_unprocessed, stem_from_m4a
 
@@ -38,12 +38,16 @@ def process_one(filename: str, mod_time: str, cfg: dict) -> None:
         log.info(f'Transcribed: {len(result["text"])} chars, {result["speakers"]} speaker(s)')
 
         place = parse_place_from_stem(stem)
+        if result['speakers'] > 1:
+            transcript = format_diarized_transcript(result['words'])
+        else:
+            transcript = result['text']
         note = build_note(
             stem=stem,
             date=date,
             duration_str=duration_str,
             speakers=result['speakers'],
-            transcript=result['text'],
+            transcript=transcript,
             place=place,
         )
 

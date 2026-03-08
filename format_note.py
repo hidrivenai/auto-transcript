@@ -17,6 +17,40 @@ def parse_place_from_stem(stem: str) -> Optional[str]:
     return None
 
 
+def format_diarized_transcript(words: list[dict]) -> str:
+    """Build speaker-attributed transcript from ElevenLabs word list.
+
+    Groups consecutive words by speaker_id and formats as:
+        **Speaker 1:** Hello, how are you?
+
+        **Speaker 2:** I'm fine, thanks.
+    """
+    if not words:
+        return ''
+
+    segments: list[tuple[str, list[str]]] = []
+    current_speaker = None
+
+    for w in words:
+        speaker = w.get('speaker_id')
+        text = w.get('text', '')
+        if not text:
+            continue
+        if speaker != current_speaker:
+            current_speaker = speaker
+            label = f'Speaker {speaker}' if speaker is not None else 'Unknown'
+            segments.append((label, [text]))
+        else:
+            segments[-1][1].append(text)
+
+    lines = []
+    for label, texts in segments:
+        content = ''.join(texts).strip()
+        if content:
+            lines.append(f'**{label}:** {content}')
+    return '\n\n'.join(lines)
+
+
 def build_note(
     stem: str,
     date: str,

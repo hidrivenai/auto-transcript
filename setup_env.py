@@ -8,9 +8,12 @@ Usage:
 """
 
 import getpass
+import json
 import re
 import subprocess
 import sys
+
+import requests
 
 
 def banner(title):
@@ -140,6 +143,26 @@ def main():
         sys.exit(1)
     print("✓ OneDrive token captured")
 
+    # Discover drive_id and drive_type via MS Graph API
+    od_drive_id = None
+    od_drive_type = 'personal'
+    try:
+        token_data = json.loads(od_token)
+        r = requests.get(
+            'https://graph.microsoft.com/v1.0/me/drive',
+            headers={'Authorization': f'Bearer {token_data["access_token"]}'},
+            timeout=10,
+        )
+        r.raise_for_status()
+        data = r.json()
+        od_drive_id = data['id']
+        od_drive_type = data.get('driveType', 'personal')
+        print(f"✓ OneDrive drive_id={od_drive_id}, type={od_drive_type}")
+    except Exception as e:
+        print(f"⚠ Could not auto-detect OneDrive drive_id: {e}")
+        od_drive_id = ask("Enter OneDrive drive_id manually (from rclone config)")
+        od_drive_type = ask("Enter OneDrive drive_type", default="personal")
+
     # ── Google Drive ──────────────────────────────────────────
     banner("Step 2 of 2 — Google Drive authentication")
     print("Your browser will open to authenticate with Google.")
@@ -163,8 +186,10 @@ def main():
         'GDRIVE_REMOTE':          f'gdrive:{gdrive_folder}',
         'POLL_INTERVAL_SECONDS':  poll_interval,
         # OneDrive rclone config (env vars — no rclone.conf file needed)
-        'RCLONE_CONFIG_ONEDRIVE_TYPE':  'onedrive',
-        'RCLONE_CONFIG_ONEDRIVE_TOKEN': od_token,
+        'RCLONE_CONFIG_ONEDRIVE_TYPE':      'onedrive',
+        'RCLONE_CONFIG_ONEDRIVE_TOKEN':     od_token,
+        'RCLONE_CONFIG_ONEDRIVE_DRIVE_ID':  od_drive_id,
+        'RCLONE_CONFIG_ONEDRIVE_DRIVE_TYPE': od_drive_type,
         # Google Drive rclone config
         'RCLONE_CONFIG_GDRIVE_TYPE':  'drive',
         'RCLONE_CONFIG_GDRIVE_SCOPE': 'drive',
