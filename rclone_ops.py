@@ -104,10 +104,7 @@ def _clean_rclone_env() -> dict:
     env = os.environ.copy()
     for key, val in env.items():
         if key.startswith('RCLONE_CONFIG_'):
-            cleaned = _strip_quotes(val)
-            if cleaned != val:
-                log.info(f'{key}: cleaned (first 40 chars: {cleaned[:40]!r})')
-            env[key] = cleaned
+            env[key] = _strip_quotes(val)
 
     if not env.get('RCLONE_CONFIG_ONEDRIVE_DRIVE_ID'):
         _resolve_onedrive_drive_id(env)
