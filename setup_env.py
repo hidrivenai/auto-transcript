@@ -110,7 +110,15 @@ def main():
     print("Sign in and authorize rclone when prompted.")
     input("\nPress Enter to open the browser...")
 
+    print("(Any 'Failed to query root for drive' errors below are expected — we fix them automatically.)\n")
     setup_remote('onedrive', 'onedrive')
+
+    # rclone auto-selects a drive_id that can be an invalid SharePoint handle
+    # on personal accounts. Clear it so rclone uses the default personal root.
+    subprocess.run(
+        ['rclone', 'config', 'update', 'onedrive', 'drive_id', ''],
+        capture_output=True,
+    )
 
     od_cfg = read_remote_config('onedrive')
     if not od_cfg.get('token'):
