@@ -2,11 +2,10 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
 REQUIRED = ['ELEVENLABS_API_KEY', 'ONEDRIVE_REMOTE', 'GDRIVE_REMOTE']
 
 def load_config() -> dict:
+    load_dotenv()
     for key in REQUIRED:
         if not os.environ.get(key):
             raise ValueError(f"Missing required environment variable: {key}")
