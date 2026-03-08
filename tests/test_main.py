@@ -40,3 +40,21 @@ def test_run_once_processes_new_file():
         mock_proc.assert_called_once_with(
             'New.m4a', '2026-03-08T10:00:00Z', SAMPLE_CFG
         )
+
+def test_run_once_continues_after_per_file_error():
+    with patch('main.list_files') as mock_list, \
+         patch('main.find_unprocessed', return_value=['Fail.m4a', 'Success.m4a']), \
+         patch('main.process_one') as mock_proc:
+
+        mock_list.side_effect = [
+            [],  # gdrive empty
+            [
+                {'name': 'Fail.m4a', 'mod_time': '2026-03-08T09:00:00Z'},
+                {'name': 'Success.m4a', 'mod_time': '2026-03-08T10:00:00Z'},
+            ],
+        ]
+        mock_proc.side_effect = [RuntimeError('transcription failed'), None]
+
+        run_once(SAMPLE_CFG)  # must not raise
+
+        assert mock_proc.call_count == 2
