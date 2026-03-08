@@ -2,6 +2,16 @@
 
 Watches an OneDrive folder for iPhone Voice Memos (`.m4a`), transcribes them with [ElevenLabs Scribe v2](https://elevenlabs.io), and writes Obsidian-ready markdown notes to a Google Drive folder.
 
+## Quick setup
+
+Run the interactive setup script on your local machine (browser required):
+
+```bash
+python setup_env.py
+```
+
+It will ask for your API key and folder paths, open your browser twice to authenticate with Microsoft and Google, then write a ready-to-use `.env` file.
+
 ## How it works
 
 1. Every 5 minutes, lists `.m4a` files in your OneDrive folder
@@ -32,61 +42,19 @@ Full transcript text here...
 - An [ElevenLabs](https://elevenlabs.io) account with API key (paid plan for Scribe v2)
 - `rclone` installed locally (for generating OAuth tokens)
 
-### Step 1 — Get your OneDrive OAuth token
+### Step 1 — Generate your .env with the setup script
 
-Run this on your local machine (browser required):
-
-```bash
-rclone config
-```
-
-Follow the prompts:
-- Choose `n` for new remote
-- Name it `onedrive`
-- Type: `onedrive` (Microsoft OneDrive)
-- Leave `client_id` and `client_secret` blank (uses rclone's built-in app)
-- Choose `onedrive` (personal) or `sharepoint` (business) when asked
-- Browser opens → sign in with your Microsoft account → authorize rclone
-- Choose your OneDrive drive when prompted
-
-After setup, open `~/.config/rclone/rclone.conf` and find the `[onedrive]` section. You need:
-
-```ini
-[onedrive]
-type = onedrive
-token = {"access_token":"...","token_type":"bearer","refresh_token":"...","expiry":"..."}
-drive_id = ...
-drive_type = personal
-```
-
-Copy the values — you'll set them as Coolify environment variables.
-
-### Step 2 — Get your Google Drive OAuth token
+Run on your local machine (browser required):
 
 ```bash
-rclone config
+python setup_env.py
 ```
 
-Follow the prompts:
-- Choose `n` for new remote
-- Name it `gdrive`
-- Type: `drive` (Google Drive)
-- Leave `client_id` and `client_secret` blank (uses rclone's built-in app)
-- Scope: `drive` (full access)
-- Browser opens → sign in with your Google account → authorize rclone
+The script authenticates with both OneDrive and Google Drive via rclone and writes all required values — including OAuth tokens — to `.env`.
 
-After setup, open `~/.config/rclone/rclone.conf` and find the `[gdrive]` section:
+> **Prerequisites:** `rclone` must be installed locally. Install from https://rclone.org/install/
 
-```ini
-[gdrive]
-type = drive
-scope = drive
-token = {"access_token":"...","token_type":"Bearer","refresh_token":"...","expiry":"..."}
-```
-
-Copy the values.
-
-### Step 3 — Deploy in Coolify
+### Step 2 — Deploy in Coolify
 
 1. In Coolify, create a new **Resource → Application**
 2. Connect your GitHub/GitLab repo
