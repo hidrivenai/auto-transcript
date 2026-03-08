@@ -12,11 +12,17 @@ _env_cache: dict | None = None
 
 
 def _strip_quotes(val: str) -> str:
-    """Strip surrounding quotes and unescape backslash-escaped quotes."""
+    """Strip surrounding quotes and unescape backslash-escaped quotes.
+
+    Handles single and double escaping (Coolify/Docker can add extra layers).
+    """
     if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
         val = val[1:-1]
-    if '\\' in val:
-        val = val.replace('\\"', '"').replace('\\\\', '\\')
+    # Unescape repeatedly until stable (handles double-escaping)
+    prev = None
+    while prev != val and '\\' in val:
+        prev = val
+        val = val.replace('\\\\', '\\').replace('\\"', '"')
     return val
 
 
@@ -98,7 +104,10 @@ def _clean_rclone_env() -> dict:
     env = os.environ.copy()
     for key, val in env.items():
         if key.startswith('RCLONE_CONFIG_'):
-            env[key] = _strip_quotes(val)
+            cleaned = _strip_quotes(val)
+            if cleaned != val:
+                log.info(f'{key}: cleaned (first 40 chars: {cleaned[:40]!r})')
+            env[key] = cleaned
 
     if not env.get('RCLONE_CONFIG_ONEDRIVE_DRIVE_ID'):
         _resolve_onedrive_drive_id(env)
