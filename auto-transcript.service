@@ -1,0 +1,17 @@
+[Unit]
+Description=Voice Memo Auto-Transcriber
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/auto-transcript/main.py
+WorkingDirectory=/opt/auto-transcript
+EnvironmentFile=/opt/auto-transcript/.env
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
